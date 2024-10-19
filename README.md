@@ -1,8 +1,8 @@
-# React + Vite
+Visual AI Chat Editor:  
+[Project Description on Notion](https://carbonated-waxflower-92e.notion.site/Visual-AI-Chat-Editor-122472a486ad80e4a703ee06427a3458?pvs=4)
+[Link](https://6712b2ede4d93ea2429d0eb0--visual-ai-chat-editor.netlify.app/)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Get Started  
+```
+npm run dev
+```
