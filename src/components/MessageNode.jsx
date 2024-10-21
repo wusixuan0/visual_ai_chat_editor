@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Box, Text} from '@chakra-ui/react';
 
-const MessageNode = ({ data }) => {
+export default memo(({ data }) => {
   return (
-    <Box 
+    <Box
       bg="white" 
       border="1px solid" 
       borderColor="gray.200" 
@@ -13,10 +13,8 @@ const MessageNode = ({ data }) => {
       shadow="md"
     >
       <Handle type="target" position={Position.Top} />
-      <Text>{data.text}</Text>
+      <Text>{data.content}</Text>
       <Handle type="source" position={Position.Bottom} />
     </Box>
   );
-};
-
-export default MessageNode;
+});
