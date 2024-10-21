@@ -1,28 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Textarea, Button, VStack, HStack } from '@chakra-ui/react';
 import axios from 'axios';
 
-const ChatInput = () => {
-  const [message, setMessage] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
+const ChatInput = ({ addNode, connectNodesWithEdge }) => {
+  const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastNodeid, setLastNodeid] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log(message);
     setIsLoading(true);
-    setMessage('');
-    
+    const userNodeId = `node-${Date.now()}`;
+    addNode(message, userNodeId);
+    if (lastNodeid) {
+      connectNodesWithEdge(lastNodeid, userNodeId);
+    }
     try {
-      const response = await axios.post('http://localhost:3000/api/ai/generate', { message }, {
+      const response = await axios.post('http://localhost:3000/api/ai/generate', { user_input: message }, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
+
+      const aiNodeId = `node-${Date.now()}`;
+      addNode(response.data?.response, aiNodeId);
+      connectNodesWithEdge(userNodeId, aiNodeId);
+      setLastNodeid(aiNodeId);
       console.log(response.data);
     } catch (error) {
       console.error('There was an error!', error);
     } finally {
       setIsLoading(false);
+      setMessage('');
     }
   };
   return (
