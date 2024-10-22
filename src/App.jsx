@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -7,8 +7,9 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  useReactFlow,
 } from '@xyflow/react';
- 
+
 import '@xyflow/react/dist/style.css';
 import ChatInput from './components/ChatInput';
 import MessageNode from './components/MessageNode';
@@ -16,11 +17,12 @@ import MessageNode from './components/MessageNode';
 const nodeTypes = {
   MessageNode: MessageNode,
 };
- 
+
 export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [messages, setMessages] = useState({});
+  const { screenToFlowPosition } = useReactFlow();
 
   useEffect(() => {
     const messages_history = {
@@ -28,13 +30,13 @@ export default function App() {
       '2': { id: '2', content: 'Child Node 1', parentId: '1', childrenIds: ['4'] },
       '3': { id: '3', content: 'level 2 after node 1', parentId: '1', childrenIds: [] },
       '4': { id: '4', content: 'level 3 after node 2', parentId: '2', childrenIds: [] },
-    }
+    };
     const initialNodes = mapMessagesToNodes(messages_history);
     const newEdges = deriveEdges(messages_history);
     setNodes(initialNodes);
     setEdges(newEdges);
   }, [messages]);
-  
+
   const mapMessagesToNodes = (messages) => {
     return Object.values(messages).map(message => ({
       id: message.id,
@@ -58,7 +60,10 @@ export default function App() {
     return edges;
   };
 
-  const addNode = useCallback((content, newNodeId) => { 
+  let id = 5;
+  const getId = () => `${id++}`;
+
+  const addNode = useCallback((content, newNodeId) => {
     setNodes((nds) => [
       ...nds,
       {
@@ -73,15 +78,40 @@ export default function App() {
   const connectNodesWithEdge = useCallback((sourceNodeId, targetNodeId) => {
     const newEdgeId = `e${sourceNodeId}-${targetNodeId}`;
     const newEdge = { id: newEdgeId, source: sourceNodeId, target: targetNodeId };
-  
-    setEdges((eds) => addEdge(newEdge, eds)); 
+
+    setEdges((eds) => addEdge(newEdge, eds));
   }, [setEdges]);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
+    [],
   );
- 
+
+  const onConnectEnd = useCallback(
+    (event, connectionState) => {
+      if (!connectionState.isValid) {
+        const newNodeId = getId();
+        const { clientX, clientY } =
+          'changedTouches' in event ? event.changedTouches[0] : event;
+        const newNode = {
+          id: newNodeId,
+          type: 'MessageNode',
+          position: screenToFlowPosition({
+            x: clientX,
+            y: clientY,
+          }),
+          data: { content: "New Message" }, 
+        };
+
+        setNodes((nds) => nds.concat(newNode));
+        setEdges((eds) =>
+          eds.concat({ id: `${connectionState.fromNode.id}-${newNodeId}`, source: connectionState.fromNode.id, target: newNodeId }),
+        );
+      }
+    },
+    [screenToFlowPosition],
+  );
+
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
       <ReactFlow
@@ -91,6 +121,7 @@ export default function App() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onConnectEnd={onConnectEnd}
       >
         <Controls />
         <MiniMap />
