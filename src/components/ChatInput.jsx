@@ -3,21 +3,22 @@ import { Box, Textarea, Button, VStack, HStack } from '@chakra-ui/react';
 import axios from 'axios';
 
 const ChatInput = ({ addNode, connectNodesWithEdge }) => {
-  const [message, setMessage] = useState('');
+  const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [lastNodeid, setLastNodeid] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(message);
+
     setIsLoading(true);
     const userNodeId = `node-${Date.now()}`;
-    addNode(message, userNodeId);
+
+    addNode(userInput, userNodeId);
     if (lastNodeid) {
       connectNodesWithEdge(lastNodeid, userNodeId);
     }
     try {
-      const response = await axios.post('http://localhost:3000/api/ai/generate', { user_input: message }, {
+      const response = await axios.post('http://localhost:3000/api/ai/generate', { user_input: userInput }, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -32,15 +33,15 @@ const ChatInput = ({ addNode, connectNodesWithEdge }) => {
       console.error('There was an error!', error);
     } finally {
       setIsLoading(false);
-      setMessage('');
+      setUserInput('');
     }
   };
   return (
     <Box position="fixed" bottom="0" left="0" right="0" p={4} bg="white" borderTop="1px" borderColor="gray.200">
       <VStack spacing={2}>
         <Textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
           placeholder="Type your message here..."
           size="sm"
           resize="vertical"
