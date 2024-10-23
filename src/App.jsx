@@ -60,21 +60,54 @@ export default function App() {
     return edges;
   };
 
-  const addNode = useCallback((content, newNodeId) => {
+  const addNode = useCallback((content) => {
+    const newNodeId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    
     setNodes((nds) => {
-      const parentNode = nds[nds.length - 1]; // TODO
-      const newY = parentNode ? parentNode.position.y + 100 : 100;
-      
-      return [
-        ...nds,
-        {
+      // Guard against empty nodes array
+      if (!nds || nds.length === 0) {
+        return [{
           id: newNodeId,
           type: 'MessageNode',
-          position: { x: 100, y: newY },
+          position: { x: 100, y: 100 },
           data: { content },
-        },
-      ];
+        }];
+      }
+  
+      try {
+        // Safely get the last node
+        const parentNode = nds[nds.length - 1];
+        
+        // Ensure parentNode has valid position
+        const lastY = parentNode?.position?.y ?? 0;
+        const newY = lastY + 100;
+  
+        // Return new array with additional node
+        return [
+          ...nds,
+          {
+            id: newNodeId,
+            type: 'MessageNode',
+            position: { x: 100, y: newY },
+            data: { content },
+          },
+        ];
+      } catch (error) {
+        console.error('Error adding node:', error);
+        // Fallback position if there's an error
+        return [
+          ...nds,
+          {
+            id: newNodeId,
+            type: 'MessageNode',
+            position: { x: 100, y: nds.length * 100 },
+            data: { content },
+          },
+        ];
+      }
     });
+  
+    return newNodeId;
   }, []);
 
   const updateNodeContent = useCallback((nodeId, content) => {

@@ -11,11 +11,10 @@ const ChatInput = ({ addNode, connectNodesWithEdge, updateNodeContent }) => {
     e.preventDefault();
 
     setIsLoading(true);
-    const userNodeId = String(Date.now());
-    console.log(String(Date.now()))
-    addNode(userInput, userNodeId);
-    console.log(String(Date.now()))
-    // addNode("Waiting for AI response...", aiNodeId);
+
+    const userNodeId = addNode(userInput);
+    const aiNodeId = addNode("Waiting for AI response...");
+    connectNodesWithEdge(userNodeId, aiNodeId);
 
     if (parentNodeid) {
       connectNodesWithEdge(parentNodeid, userNodeId);
@@ -27,10 +26,7 @@ const ChatInput = ({ addNode, connectNodesWithEdge, updateNodeContent }) => {
         },
       });
 
-      const aiNodeId = String(Date.now());
-      addNode(response.data?.response, aiNodeId);
-      // updateNodeContent(aiNodeId, response.data?.response);
-      connectNodesWithEdge(userNodeId, aiNodeId);
+      updateNodeContent(aiNodeId, response.data?.response);
       setParentNodeid(aiNodeId);
       console.log(response.data);
     } catch (error) {
