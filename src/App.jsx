@@ -13,6 +13,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import ChatInput from './components/ChatInput';
 import MessageNode from './components/MessageNode';
+import NodeOperations from './utils/NodeHelpers';
 
 const nodeTypes = {
   MessageNode: MessageNode,
@@ -24,6 +25,12 @@ export default function App() {
   // const [messages, setMessages] = useState({});
   const { screenToFlowPosition } = useReactFlow();
 
+  // Pass the setState functions directly to the hook
+  const { addNodeBelow, onConnectEnd } = NodeOperations(
+    setNodes,
+    setEdges,
+    screenToFlowPosition
+  );
   // useEffect(() => {
   //   const messages_history = {
   //     '1': { id: '1', content: 'Root Node', parentId: null, childrenIds: ['2', '3'] },
@@ -60,56 +67,6 @@ export default function App() {
     return edges;
   };
 
-  const addNode = useCallback((content) => {
-    const newNodeId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
-    
-    setNodes((nds) => {
-      // Guard against empty nodes array
-      if (!nds || nds.length === 0) {
-        return [{
-          id: newNodeId,
-          type: 'MessageNode',
-          position: { x: 100, y: 100 },
-          data: { content },
-        }];
-      }
-  
-      try {
-        // Safely get the last node
-        const parentNode = nds[nds.length - 1];
-        
-        // Ensure parentNode has valid position
-        const lastY = parentNode?.position?.y ?? 0;
-        const newY = lastY + 100;
-  
-        // Return new array with additional node
-        return [
-          ...nds,
-          {
-            id: newNodeId,
-            type: 'MessageNode',
-            position: { x: 100, y: newY },
-            data: { content },
-          },
-        ];
-      } catch (error) {
-        console.error('Error adding node:', error);
-        // Fallback position if there's an error
-        return [
-          ...nds,
-          {
-            id: newNodeId,
-            type: 'MessageNode',
-            position: { x: 100, y: nds.length * 100 },
-            data: { content },
-          },
-        ];
-      }
-    });
-  
-    return newNodeId;
-  }, []);
-
   const updateNodeContent = useCallback((nodeId, content) => {
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
@@ -139,31 +96,6 @@ export default function App() {
     [],
   );
 
-  const onConnectEnd = useCallback(
-    (event, connectionState) => {
-      if (!connectionState.isValid) {
-        const newNodeId = String(Date.now());
-        const { clientX, clientY } =
-          'changedTouches' in event ? event.changedTouches[0] : event;
-        const newNode = {
-          id: newNodeId,
-          type: 'MessageNode',
-          position: screenToFlowPosition({
-            x: clientX,
-            y: clientY,
-          }),
-          data: { content: "New Message" }, 
-        };
-
-        setNodes((nds) => nds.concat(newNode));
-        setEdges((eds) =>
-          eds.concat({ id: `${connectionState.fromNode.id}-${newNodeId}`, source: connectionState.fromNode.id, target: newNodeId }),
-        );
-      }
-    },
-    [screenToFlowPosition],
-  );
-
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
       <ReactFlow
@@ -180,7 +112,7 @@ export default function App() {
         <Background variant="dots" gap={12} size={1} />
       </ReactFlow>
       <ChatInput 
-        addNode={addNode}
+        addNode={addNodeBelow}
         updateNodeContent={updateNodeContent}
         connectNodesWithEdge={connectNodesWithEdge}
       />
