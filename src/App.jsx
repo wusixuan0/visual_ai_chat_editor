@@ -21,21 +21,21 @@ const nodeTypes = {
 export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [messages, setMessages] = useState({});
+  // const [messages, setMessages] = useState({});
   const { screenToFlowPosition } = useReactFlow();
 
-  useEffect(() => {
-    const messages_history = {
-      '1': { id: '1', content: 'Root Node', parentId: null, childrenIds: ['2', '3'] },
-      '2': { id: '2', content: 'Child Node 1', parentId: '1', childrenIds: ['4'] },
-      '3': { id: '3', content: 'level 2 after node 1', parentId: '1', childrenIds: [] },
-      '4': { id: '4', content: 'level 3 after node 2', parentId: '2', childrenIds: [] },
-    };
-    const initialNodes = mapMessagesToNodes(messages_history);
-    const newEdges = deriveEdges(messages_history);
-    setNodes(initialNodes);
-    setEdges(newEdges);
-  }, [messages]);
+  // useEffect(() => {
+  //   const messages_history = {
+  //     '1': { id: '1', content: 'Root Node', parentId: null, childrenIds: ['2', '3'] },
+  //     '2': { id: '2', content: 'Child Node 1', parentId: '1', childrenIds: ['4'] },
+  //     '3': { id: '3', content: 'level 2 after node 1', parentId: '1', childrenIds: [] },
+  //     '4': { id: '4', content: 'level 3 after node 2', parentId: '2', childrenIds: [] },
+  //   };
+  //   const initialNodes = mapMessagesToNodes(messages_history);
+  //   const newEdges = deriveEdges(messages_history);
+  //   setNodes(initialNodes);
+  //   setEdges(newEdges);
+  // }, [messages]);
 
   const mapMessagesToNodes = (messages) => {
     return Object.values(messages).map(message => ({
@@ -60,20 +60,39 @@ export default function App() {
     return edges;
   };
 
-  let id = 5;
-  const getId = () => `${id++}`;
-
   const addNode = useCallback((content, newNodeId) => {
-    setNodes((nds) => [
-      ...nds,
-      {
-        id: newNodeId,
-        type: 'MessageNode',
-        position: { x: 250, y: nds.length * 100 },
-        data: { content },
-      },
-    ]);
-  }, [setNodes]);
+    setNodes((nds) => {
+      const parentNode = nds[nds.length - 1]; // TODO
+      const newY = parentNode ? parentNode.position.y + 100 : 100;
+      
+      return [
+        ...nds,
+        {
+          id: newNodeId,
+          type: 'MessageNode',
+          position: { x: 100, y: newY },
+          data: { content },
+        },
+      ];
+    });
+  }, []);
+
+  const updateNodeContent = useCallback((nodeId, content) => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              content,
+            },
+          };
+        }
+        return node;
+      })
+    );
+  }, []);
 
   const connectNodesWithEdge = useCallback((sourceNodeId, targetNodeId) => {
     const newEdgeId = `e${sourceNodeId}-${targetNodeId}`;
@@ -90,7 +109,7 @@ export default function App() {
   const onConnectEnd = useCallback(
     (event, connectionState) => {
       if (!connectionState.isValid) {
-        const newNodeId = getId();
+        const newNodeId = String(Date.now());
         const { clientX, clientY } =
           'changedTouches' in event ? event.changedTouches[0] : event;
         const newNode = {
@@ -127,7 +146,11 @@ export default function App() {
         <MiniMap />
         <Background variant="dots" gap={12} size={1} />
       </ReactFlow>
-      <ChatInput addNode={addNode} connectNodesWithEdge={connectNodesWithEdge} />
+      <ChatInput 
+        addNode={addNode}
+        updateNodeContent={updateNodeContent}
+        connectNodesWithEdge={connectNodesWithEdge}
+      />
     </div>
   );
 }

@@ -2,20 +2,23 @@ import React, { useState } from 'react';
 import { Box, Textarea, Button, VStack, HStack } from '@chakra-ui/react';
 import axios from 'axios';
 
-const ChatInput = ({ addNode, connectNodesWithEdge }) => {
+const ChatInput = ({ addNode, connectNodesWithEdge, updateNodeContent }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [lastNodeid, setLastNodeid] = useState(null);
+  const [parentNodeid, setParentNodeid] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     setIsLoading(true);
-    const userNodeId = `node-${Date.now()}`;
-
+    const userNodeId = String(Date.now());
+    console.log(String(Date.now()))
     addNode(userInput, userNodeId);
-    if (lastNodeid) {
-      connectNodesWithEdge(lastNodeid, userNodeId);
+    console.log(String(Date.now()))
+    // addNode("Waiting for AI response...", aiNodeId);
+
+    if (parentNodeid) {
+      connectNodesWithEdge(parentNodeid, userNodeId);
     }
     try {
       const response = await axios.post('http://localhost:3000/api/ai/generate', { user_input: userInput }, {
@@ -24,10 +27,11 @@ const ChatInput = ({ addNode, connectNodesWithEdge }) => {
         },
       });
 
-      const aiNodeId = `node-${Date.now()}`;
+      const aiNodeId = String(Date.now());
       addNode(response.data?.response, aiNodeId);
+      // updateNodeContent(aiNodeId, response.data?.response);
       connectNodesWithEdge(userNodeId, aiNodeId);
-      setLastNodeid(aiNodeId);
+      setParentNodeid(aiNodeId);
       console.log(response.data);
     } catch (error) {
       console.error('There was an error!', error);
@@ -36,6 +40,7 @@ const ChatInput = ({ addNode, connectNodesWithEdge }) => {
       setUserInput('');
     }
   };
+
   return (
     <Box position="fixed" bottom="0" left="0" right="0" p={4} bg="white" borderTop="1px" borderColor="gray.200">
       <VStack spacing={2}>
