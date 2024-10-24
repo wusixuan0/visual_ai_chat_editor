@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -14,19 +14,31 @@ import '@xyflow/react/dist/style.css';
 import ChatInput from './components/ChatInput';
 import MessageNode from './components/MessageNode';
 import NodeOperations from './utils/NodeHelpers';
+import PlaceholderNode from './components/PlaceholderNode';
+import { createNodeId } from './utils/Util';
 
 const nodeTypes = {
   MessageNode: MessageNode,
+  PlaceholderNode: PlaceholderNode,
 };
 
 export default function App() {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [nodes, setNodes] = useState(() => [{
+    id: createNodeId(),
+    type: "PlaceholderNode",
+    position: { x: 100, y: 100 },
+    data: {
+      content: "Start a new conversation by typing below.",
+      hideUpperHandle: true,
+    },
+  }]);
+
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   // const [messages, setMessages] = useState({});
   const { screenToFlowPosition } = useReactFlow();
 
   // Pass the setState functions directly to the hook
-  const { addNodeBelow, onConnectEnd } = NodeOperations(
+  const { addNode, onConnectEnd, updateNodeContent } = NodeOperations(
     setNodes,
     setEdges,
     screenToFlowPosition
@@ -67,23 +79,6 @@ export default function App() {
     return edges;
   };
 
-  const updateNodeContent = useCallback((nodeId, content) => {
-    setNodes((prevNodes) =>
-      prevNodes.map((node) => {
-        if (node.id === nodeId) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              content,
-            },
-          };
-        }
-        return node;
-      })
-    );
-  }, []);
-
   const connectNodesWithEdge = useCallback((sourceNodeId, targetNodeId) => {
     const newEdgeId = `e${sourceNodeId}-${targetNodeId}`;
     const newEdge = { id: newEdgeId, source: sourceNodeId, target: targetNodeId };
@@ -102,7 +97,6 @@ export default function App() {
         nodes={nodes}
         nodeTypes={nodeTypes}
         edges={edges}
-        onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onConnectEnd={onConnectEnd}
@@ -111,8 +105,9 @@ export default function App() {
         <MiniMap />
         <Background variant="dots" gap={12} size={1} />
       </ReactFlow>
-      <ChatInput 
-        addNode={addNodeBelow}
+      <ChatInput
+        initialNodeId={nodes[0].id}
+        addNode={addNode}
         updateNodeContent={updateNodeContent}
         connectNodesWithEdge={connectNodesWithEdge}
       />

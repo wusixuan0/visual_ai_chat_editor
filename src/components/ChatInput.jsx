@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Textarea, Button, VStack, HStack } from '@chakra-ui/react';
 import axios from 'axios';
 
-const ChatInput = ({ addNode, connectNodesWithEdge, updateNodeContent }) => {
+const ChatInput = ({ initialNodeId, addNode, connectNodesWithEdge, updateNodeContent }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [parentNodeid, setParentNodeid] = useState(null);
@@ -15,13 +15,13 @@ const ChatInput = ({ addNode, connectNodesWithEdge, updateNodeContent }) => {
 
     setIsLoading(true);
 
-    const userNodeId = addNode(userInput);
+    const userNodeId = addNode(userInput, "MessageNode");
 
     if (parentNodeid) {
       connectNodesWithEdge(parentNodeid, userNodeId);
     }
 
-    const aiNodeId = addNode("Waiting for AI response...");
+    const aiNodeId = addNode("Waiting for AI response...", "PlaceholderNode");
     connectNodesWithEdge(userNodeId, aiNodeId);
 
     setHistory(prevHistory => [...prevHistory, {
@@ -40,8 +40,8 @@ const ChatInput = ({ addNode, connectNodesWithEdge, updateNodeContent }) => {
         },
       });
 
-      updateNodeContent(aiNodeId, response.data?.response);
-      setParentNodeid(aiNodeId);
+      updateNodeContent(aiNodeId, response.data?.response, "MessageNode");
+      setParentNodeid(aiNodeId); // TODO: setParentNodeid when user add node
 
       setHistory(prevHistory => [...prevHistory, {
         role: "model",

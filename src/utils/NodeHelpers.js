@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
-
-const createNodeId = () => `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+import { createNodeId } from './Util';
 
 const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
   // add a node with custom positioning
@@ -10,7 +9,7 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
     setNodes((nds) => {
       const newNode = {
         id: newNodeId,
-        type: 'MessageNode',
+        type: 'PlaceholderNode',
         position,
         data: { content },
       };
@@ -36,10 +35,19 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
   }, [setNodes, setEdges]);
 
   // for vertical stacking
-  const addNodeBelow = useCallback((content) => {
+  const addNode = useCallback((content, nodeType) => {
     const newNodeId = createNodeId();
 
     setNodes((nds) => {
+      if (!nds || nds.length === 0) {
+        return [{
+          id: newNodeId,
+          type: nodeType,
+          position: { x: 100, y: 100 },
+          data: { content },
+        }];
+      }
+
       try {
         const parentNode = nds?.[nds.length - 1];
         const lastY = parentNode?.position?.y ?? 0;
@@ -49,7 +57,7 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
           ...nds,
           {
             id: newNodeId,
-            type: 'MessageNode',
+            type: nodeType,
             position,
             data: { content },
           },
@@ -60,7 +68,7 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
           ...nds,
           {
             id: createNodeId(),
-            type: 'MessageNode',
+            type: nodeType,
             position: { x: 100, y: nds.length * 100 },
             data: { content },
           },
@@ -69,6 +77,25 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
     });
 
     return newNodeId;
+  }, [setNodes]);
+
+
+  const updateNodeContent = useCallback((nodeId, content, type) => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            type,
+            data: {
+              ...node.data,
+              content,
+            },
+          };
+        }
+        return node;
+      })
+    );
   }, [setNodes]);
 
   const onConnectEnd = useCallback((event, connectionState) => {
@@ -82,7 +109,7 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
       });
 
       addNodeWithPosition(
-        "New Message Placeholder",
+        "Type to continue conversation…",
         position,
         connectionState.fromNode.id
       );
@@ -90,8 +117,9 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
   }, [screenToFlowPosition, addNodeWithPosition]);
 
   return {
-    addNodeBelow,
+    addNode,
     addNodeWithPosition,
+    updateNodeContent,
     onConnectEnd,
   };
 };
