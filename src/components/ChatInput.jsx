@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Box, Textarea, Button, VStack, HStack } from '@chakra-ui/react';
 import axios from 'axios';
+import { convertEdgeToParentMap, traverseToRoot, extractHistory } from '../utils/Util';
 
-const ChatInput = ({ selectedNodeId, setSelectedNodeId, addNode, connectNodesWithEdge, updateNodeContent }) => {
+const ChatInput = ({ nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUserNodeId, addNode, connectNodesWithEdge, updateNodeContent }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [history, setHistory] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -14,40 +14,37 @@ const ChatInput = ({ selectedNodeId, setSelectedNodeId, addNode, connectNodesWit
 
     setIsLoading(true);
 
-    updateNodeContent(selectedNodeId, userInput, "MessageNode", false);
-    setSelectedNodeId(null);
+    updateNodeContent(selectedUserNodeId, userInput, "MessageNode", false);
+    setSelectedUserNodeId(null);
 
     const aiNodeId = addNode("Waiting for AI response...", "PlaceholderNode");
-    connectNodesWithEdge(selectedNodeId, aiNodeId);
+    connectNodesWithEdge(selectedUserNodeId, aiNodeId);
 
-    setHistory(prevHistory => [...prevHistory, {
+    const parentMap = convertEdgeToParentMap(edges);
+    const pathId = traverseToRoot(selectedUserNodeId, rootNodeId, parentMap);
+    const currentHistory = extractHistory(pathId, nodes);
+    currentHistory.pop();
+
+    currentHistory.push({
       role: "user",
       parts: [{ text: userInput }]
-    }]);
+    });
+
+    console.log("chat path", currentHistory)
 
     try {
-      const currentHistory = [...history, {
-        role: "user",
-        parts: [{ text: userInput }]
-      }];
       const response = await axios.post('http://localhost:3000/api/ai/generate', { history: currentHistory }, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
-      updateNodeContent(aiNodeId, response.data?.response, "MessageNode");
+      updateNodeContent(aiNodeId, response.data?.response, "ResponseNode");
 
       const newNodeId = addNode("Type to continue conversation…", "PlaceholderNode", true);
-      setSelectedNodeId(newNodeId);
+      setSelectedUserNodeId(newNodeId);
 
       connectNodesWithEdge(aiNodeId, newNodeId);
-      setSelectedNodeId(newNodeId);
-
-      setHistory(prevHistory => [...prevHistory, {
-        role: "model",
-        parts: [{ text: response.data?.response }]
-      }]);
 
       console.log(response.data);
     } catch (error) {
@@ -66,7 +63,7 @@ const ChatInput = ({ selectedNodeId, setSelectedNodeId, addNode, connectNodesWit
           <Textarea
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder={selectedNodeId ? "Type your message here..." : "Select a new message and type your message here..."}
+            placeholder={selectedUserNodeId ? "Type your message here..." : "Select a new message and type your message here..."}
             size="sm"
             resize="vertical"
             minH="100px"
@@ -76,9 +73,9 @@ const ChatInput = ({ selectedNodeId, setSelectedNodeId, addNode, connectNodesWit
           <HStack justifyContent="flex-end" width="100%">
             <Button
               type="submit"
-              colorScheme="blue"
+              colorScheme="purple"
               isLoading={isLoading}
-              isDisabled={isLoading || !selectedNodeId}
+              isDisabled={isLoading || !selectedUserNodeId}
             >
               Send
             </Button>

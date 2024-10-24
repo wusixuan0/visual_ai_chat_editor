@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { createNodeId } from './Util';
 import { addEdge } from '@xyflow/react';
 
-const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
+const NodeOperations = (setNodes, setEdges, screenToFlowPosition, setSelectedNodeId, setSelectedUserNodeId) => {
   // add a node with custom positioning
   const addNodeWithPosition = useCallback((content, position, sourceNodeId = null) => {
     const newNodeId = createNodeId();
@@ -162,6 +162,38 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
     [],
   );
 
+
+  const onNodeClick = useCallback((_, clickedNode) => {
+    setNodes((prevNodes) => {
+      const clickedId = clickedNode.id
+      const isSelected = clickedNode?.data?.selected;
+
+      if (!isSelected) {
+        setSelectedNodeId(clickedId);
+
+        if (clickedNode.type !== "ResponseNode") {
+          setSelectedUserNodeId(clickedId);
+        } else {
+          setSelectedUserNodeId(null);
+        }
+        console.log(`selected ${clickedNode.type} node id:`, clickedId);
+      } else {
+        setSelectedNodeId(null);
+        setSelectedUserNodeId(null);
+
+        console.log(`unselected ${clickedNode.type}node id:`, clickedId);
+      }
+  
+      return prevNodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          selected: node.id === clickedId ? !node.data.selected : false
+        }
+      }));
+    });
+  }, [setNodes, setSelectedNodeId]);
+
   return {
     addNode,
     addNodeWithPosition,
@@ -170,6 +202,7 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
     AddNodeOnEdgeDrop,
     connectNodesWithEdge,
     onConnect,
+    onNodeClick,
   };
 };
 

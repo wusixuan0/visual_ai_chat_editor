@@ -14,11 +14,13 @@ import ChatInput from './components/ChatInput';
 import MessageNode from './components/MessageNode';
 import NodeOperations from './utils/NodeHelpers';
 import PlaceholderNode from './components/PlaceholderNode';
+import ResponseNode from './components/ResponseNode';
 import { createNodeId } from './utils/Util';
 
 const nodeTypes = {
   MessageNode: MessageNode,
   PlaceholderNode: PlaceholderNode,
+  ResponseNode: ResponseNode,
 };
 
 export default function App() {
@@ -27,9 +29,9 @@ export default function App() {
     type: "PlaceholderNode",
     position: { x: 100, y: 100 },
     data: {
-        content: "Start a new conversation by typing below.",
-        hideUpperHandle: true,
-        selected: true,
+      content: "Start a new conversation by typing below.",
+      hideUpperHandle: true,
+      selected: true,
     },
   };
 
@@ -37,12 +39,16 @@ export default function App() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { screenToFlowPosition } = useReactFlow();
   const [selectedNodeId, setSelectedNodeId] = useState(initialNode.id);
+  const [selectedUserNodeId, setSelectedUserNodeId] = useState(initialNode.id);
+  const [rootNodeId, setRootNodeId] = useState(initialNode.id);
 
   // Pass the setState functions directly to the hook
-  const { addNode, AddNodeOnEdgeDrop, updateNodeContent, connectNodesWithEdge,onConnect } = NodeOperations(
+  const { addNode, AddNodeOnEdgeDrop, updateNodeContent, connectNodesWithEdge, onConnect, onNodeClick } = NodeOperations(
     setNodes,
     setEdges,
-    screenToFlowPosition
+    screenToFlowPosition,
+    setSelectedNodeId,
+    setSelectedUserNodeId,
   );
 
   const recordCreatedNodeId = useCallback((nodeId) => {
@@ -53,30 +59,6 @@ export default function App() {
   const onConnectEnd = AddNodeOnEdgeDrop(
     recordCreatedNodeId,
   );
-
-  const onNodeClick = useCallback((_, clickedNode) => {
-    setNodes((prevNodes) => {
-      const isSelected = prevNodes.find(node => 
-        node.id === clickedNode.id
-      )?.data?.selected;
-  
-      if (!isSelected) {
-        setSelectedNodeId(clickedNode.id);
-        console.log("selected node id", clickedNode.id);
-      } else {
-        setSelectedNodeId(null);
-        console.log("unselected node id", clickedNode.id);
-      }
-  
-      return prevNodes.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          selected: node.id === clickedNode.id ? !node.data.selected : false
-        }
-      }));
-    });
-  }, [setNodes]);
 
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
@@ -95,8 +77,11 @@ export default function App() {
         <Background variant="dots" gap={12} size={1} />
       </ReactFlow>
       <ChatInput
-        selectedNodeId={selectedNodeId}
-        setSelectedNodeId={setSelectedNodeId}
+        nodes={nodes}
+        edges={edges}
+        rootNodeId={rootNodeId}
+        selectedUserNodeId={selectedUserNodeId}
+        setSelectedUserNodeId={setSelectedUserNodeId}
         addNode={addNode}
         updateNodeContent={updateNodeContent}
         connectNodesWithEdge={connectNodesWithEdge}
