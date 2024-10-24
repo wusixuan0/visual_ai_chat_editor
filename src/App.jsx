@@ -5,6 +5,7 @@ import {
   Controls,
   Background,
   useEdgesState,
+  useNodesState,
   useReactFlow,
 } from '@xyflow/react';
 
@@ -31,7 +32,8 @@ export default function App() {
         selected: true,
     },
   };
-  const [nodes, setNodes] = useState(() => [initialNode]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState([initialNode]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { screenToFlowPosition } = useReactFlow();
   const [selectedNodeId, setSelectedNodeId] = useState(initialNode.id);
@@ -53,7 +55,6 @@ export default function App() {
   );
 
   const onNodeClick = useCallback((_, clickedNode) => {
-    
     setNodes((prevNodes) => {
       const isSelected = prevNodes.find(node => 
         node.id === clickedNode.id
@@ -83,6 +84,7 @@ export default function App() {
         nodes={nodes}
         nodeTypes={nodeTypes}
         edges={edges}
+        onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onConnectEnd={onConnectEnd}
