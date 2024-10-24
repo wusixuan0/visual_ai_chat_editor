@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { Box, Textarea, Button, VStack, HStack } from '@chakra-ui/react';
 import axios from 'axios';
 
-const ChatInput = ({ initialNodeId, addNode, connectNodesWithEdge, updateNodeContent }) => {
+const ChatInput = ({ selectedNodeId, setSelectedNodeId, addNode, connectNodesWithEdge, updateNodeContent }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [parentNodeid, setParentNodeid] = useState(null);
   const [history, setHistory] = useState([]);
 
   const handleSubmit = async (e) => {
@@ -15,14 +14,11 @@ const ChatInput = ({ initialNodeId, addNode, connectNodesWithEdge, updateNodeCon
 
     setIsLoading(true);
 
-    const userNodeId = addNode(userInput, "MessageNode");
-
-    if (parentNodeid) {
-      connectNodesWithEdge(parentNodeid, userNodeId);
-    }
+    updateNodeContent(selectedNodeId, userInput, "MessageNode", false);
+    setSelectedNodeId(null);
 
     const aiNodeId = addNode("Waiting for AI response...", "PlaceholderNode");
-    connectNodesWithEdge(userNodeId, aiNodeId);
+    connectNodesWithEdge(selectedNodeId, aiNodeId);
 
     setHistory(prevHistory => [...prevHistory, {
       role: "user",
@@ -41,7 +37,12 @@ const ChatInput = ({ initialNodeId, addNode, connectNodesWithEdge, updateNodeCon
       });
 
       updateNodeContent(aiNodeId, response.data?.response, "MessageNode");
-      setParentNodeid(aiNodeId); // TODO: setParentNodeid when user add node
+
+      const newNodeId = addNode("Type to continue conversation…", "PlaceholderNode", true);
+      setSelectedNodeId(newNodeId);
+
+      connectNodesWithEdge(aiNodeId, newNodeId);
+      setSelectedNodeId(newNodeId);
 
       setHistory(prevHistory => [...prevHistory, {
         role: "model",
@@ -65,7 +66,7 @@ const ChatInput = ({ initialNodeId, addNode, connectNodesWithEdge, updateNodeCon
           <Textarea
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type your message here..."
+            placeholder={selectedNodeId ? "Type your message here..." : "Select a new message and type your message here..."}
             size="sm"
             resize="vertical"
             minH="100px"
@@ -77,7 +78,7 @@ const ChatInput = ({ initialNodeId, addNode, connectNodesWithEdge, updateNodeCon
               type="submit"
               colorScheme="blue"
               isLoading={isLoading}
-              isDisabled={isLoading || !userInput.trim()}
+              isDisabled={isLoading || !selectedNodeId}
             >
               Send
             </Button>

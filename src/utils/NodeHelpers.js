@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { createNodeId } from './Util';
+import { addEdge } from '@xyflow/react';
 
 const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
   // add a node with custom positioning
@@ -11,7 +12,10 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
         id: newNodeId,
         type: 'PlaceholderNode',
         position,
-        data: { content },
+        data: { 
+          content,
+          // selected: true,
+        },
       };
 
       if (!nds || nds.length === 0) {
@@ -35,7 +39,7 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
   }, [setNodes, setEdges]);
 
   // for vertical stacking
-  const addNode = useCallback((content, nodeType) => {
+  const addNode = useCallback((content, nodeType, selected) => {
     const newNodeId = createNodeId();
 
     setNodes((nds) => {
@@ -44,7 +48,10 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
           id: newNodeId,
           type: nodeType,
           position: { x: 100, y: 100 },
-          data: { content },
+          data: { 
+            content,
+            selected,
+          },
         }];
       }
 
@@ -59,7 +66,10 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
             id: newNodeId,
             type: nodeType,
             position,
-            data: { content },
+            data: { 
+              content,
+              selected,
+            },  
           },
         ];
       } catch (error) {
@@ -80,7 +90,7 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
   }, [setNodes]);
 
 
-  const updateNodeContent = useCallback((nodeId, content, type) => {
+  const updateNodeContent = useCallback((nodeId, content, type, selected) => {
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
         if (node.id === nodeId) {
@@ -90,6 +100,7 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
             data: {
               ...node.data,
               content,
+              selected,
             },
           };
         }
@@ -116,11 +127,49 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition) => {
     }
   }, [screenToFlowPosition, addNodeWithPosition]);
 
+  const AddNodeOnEdgeDrop = (onNodeCreated) => {
+    return useCallback((event, connectionState) => {
+      if (!connectionState.isValid) {
+        const { clientX, clientY } =
+          'changedTouches' in event ? event.changedTouches[0] : event;
+        
+        const position = screenToFlowPosition({
+          x: clientX,
+          y: clientY,
+        });
+  
+        const newNodeId = addNodeWithPosition(
+          "Type to continue conversation…",
+          position,
+          connectionState.fromNode.id
+        );
+        
+        // Call the callback with the new node ID
+        onNodeCreated(newNodeId);
+      }
+    }, [screenToFlowPosition, addNodeWithPosition, onNodeCreated]);
+  };
+
+  const connectNodesWithEdge = useCallback((sourceNodeId, targetNodeId) => {
+    const newEdgeId = `e${sourceNodeId}-${targetNodeId}`;
+    const newEdge = { id: newEdgeId, source: sourceNodeId, target: targetNodeId };
+
+    setEdges((eds) => addEdge(newEdge, eds));
+  }, [setEdges]);
+
+  const onConnect = useCallback(
+    (params) => setEdges((eds) => addEdge(params, eds)),
+    [],
+  );
+
   return {
     addNode,
     addNodeWithPosition,
     updateNodeContent,
     onConnectEnd,
+    AddNodeOnEdgeDrop,
+    connectNodesWithEdge,
+    onConnect,
   };
 };
 
