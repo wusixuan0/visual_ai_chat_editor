@@ -1,8 +1,13 @@
 import { useCallback } from 'react';
 import { createNodeId } from './Util';
-import { addEdge } from '@xyflow/react';
+import {
+  addEdge,
+  getIncomers,
+  getOutgoers,
+  getConnectedEdges,
+} from '@xyflow/react';
 
-const NodeOperations = (setNodes, setEdges, screenToFlowPosition, setSelectedNodeId, setSelectedUserNodeId) => {
+const NodeOperations = (nodes, edges, setNodes, setEdges, screenToFlowPosition, setSelectedNodeId, setSelectedUserNodeId) => {
   // add a node with custom positioning
   const addNodeWithPosition = useCallback((content, position, sourceNodeId = null) => {
     const newNodeId = createNodeId();
@@ -194,6 +199,33 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition, setSelectedNod
     });
   }, [setNodes, setSelectedNodeId]);
 
+  const onNodesDelete = useCallback(
+    (deleted) => {
+      setEdges(
+        deleted.reduce((acc, node) => {
+          const incomers = getIncomers(node, nodes, edges);
+          const outgoers = getOutgoers(node, nodes, edges);
+          const connectedEdges = getConnectedEdges([node], edges);
+
+          const remainingEdges = acc.filter(
+            (edge) => !connectedEdges.includes(edge),
+          );
+
+          const createdEdges = incomers.flatMap(({ id: source }) =>
+            outgoers.map(({ id: target }) => ({
+              id: `${source}->${target}`,
+              source,
+              target,
+            })),
+          );
+
+          return [...remainingEdges, ...createdEdges];
+        }, edges),
+      );
+    },
+    [nodes, edges],
+  );
+
   return {
     addNode,
     addNodeWithPosition,
@@ -203,6 +235,7 @@ const NodeOperations = (setNodes, setEdges, screenToFlowPosition, setSelectedNod
     connectNodesWithEdge,
     onConnect,
     onNodeClick,
+    onNodesDelete,
   };
 };
 
