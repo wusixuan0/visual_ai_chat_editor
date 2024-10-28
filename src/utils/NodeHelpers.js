@@ -252,33 +252,95 @@ const NodeOperations = () => {
     });
   }, [setNodes, setNodeMap, setSelectedNodeId, setSelectedUserNodeId]);
 
-  // TODO: nodeMap
-  const onNodesDelete = useCallback(
-    (deleted) => {
-      setEdges(
-        deleted.reduce((acc, node) => {
-          const incomers = getIncomers(node, nodes, edges);
-          const outgoers = getOutgoers(node, nodes, edges);
-          const connectedEdges = getConnectedEdges([node], edges);
+  const onNodesDelete = useCallback((deleted) => {
+    const deletedNode = deleted[0];
+    if (!deletedNode) return;
+  
+    const incomer = getIncomers(deletedNode, nodes, edges)[0]; // Parent
+    const outgoers = getOutgoers(deletedNode, nodes, edges); // Children
+  
+    if (incomer && outgoers) {
+      setNodeMap((prev) => {
+        const newNodeMap = { ...prev };
+        outgoers.forEach(outgoer => {          
+          if (newNodeMap[outgoer.id].parentId) {
+            newNodeMap[outgoer.id].parentId = newNodeMap[incomer.id];
+          }
+        });
 
-          const remainingEdges = acc.filter(
-            (edge) => !connectedEdges.includes(edge),
-          );
-
-          const createdEdges = incomers.flatMap(({ id: source }) =>
-            outgoers.map(({ id: target }) => ({
-              id: `${source}->${target}`,
-              source,
-              target,
-            })),
-          );
-
-          return [...remainingEdges, ...createdEdges];
-        }, edges),
+        delete newNodeMap[deletedNode.id];
+        return newNodeMap;
+      });
+    }
+  
+    setEdges((prevEdges) => {
+      const remainingEdges = prevEdges.filter(
+        edge => edge.source !== deletedNode.id && edge.target !== deletedNode.id
       );
-    },
-    [nodes, edges],
-  );
+      
+      if (incomer && outgoers) {
+        outgoers.forEach(outgoer => {
+
+          remainingEdges.push({
+            id: `${incomer.id}->${outgoer.id}`,
+            source: incomer.id,
+            target: outgoer.id,
+          });
+        });
+      }
+      
+      return remainingEdges;
+    });
+  
+    setNodes((prevNodes) => 
+      prevNodes.filter(node => node.id !== deletedNode.id)
+    );
+  }, [nodes, edges]);
+
+  const onNodeDelete = useCallback((deleted) => {
+    const deletedNode = deleted[0];
+    if (!deletedNode) return;
+  
+    const incomer = getIncomers(deletedNode, nodes, edges)[0]; // Parent
+    const outgoers = getOutgoers(deletedNode, nodes, edges); // Children
+  
+    if (incomer && outgoers) {
+      setNodeMap((prev) => {
+        const newNodeMap = { ...prev };
+        outgoers.forEach(outgoer => {          
+          if (newNodeMap[outgoer.id].parentId) {
+            newNodeMap[outgoer.id].parentId = newNodeMap[incomer.id];
+          }
+        });
+
+        delete newNodeMap[deletedNode.id];
+        return newNodeMap;
+      });
+    }
+  
+    setEdges((prevEdges) => {
+      const remainingEdges = prevEdges.filter(
+        edge => edge.source !== deletedNode.id && edge.target !== deletedNode.id
+      );
+      
+      if (incomer && outgoers) {
+        outgoers.forEach(outgoer => {
+
+          remainingEdges.push({
+            id: `${incomer.id}->${outgoer.id}`,
+            source: incomer.id,
+            target: outgoer.id,
+          });
+        });
+      }
+      
+      return remainingEdges;
+    });
+  
+    setNodes((prevNodes) => 
+      prevNodes.filter(node => node.id !== deletedNode.id)
+    );
+  }, [nodes, edges]);
 
   return {
     nodes,
@@ -293,6 +355,7 @@ const NodeOperations = () => {
     onConnect,
     onNodeClick,
     onNodesDelete,
+    onNodeDelete,
     nodeMap,
     setNodeMap,
     selectedUserNodeId,

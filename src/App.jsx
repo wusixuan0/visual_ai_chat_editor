@@ -36,7 +36,7 @@ export default function App() {
     updateNodeContent,
     onConnect,
     onNodeClick,
-    onNodesDelete,
+    onNodeDelete,
     nodeMap,
     setNodeMap,
     selectedUserNodeId,
@@ -169,7 +169,7 @@ export default function App() {
         edges={styledEdges}
         onNodesChange={onNodesChange}
         onNodeClick={onNodeClick}
-        onNodesDelete={onNodesDelete}
+        onNodesDelete={onNodeDelete}
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         onEdgesChange={onEdgesChange}
