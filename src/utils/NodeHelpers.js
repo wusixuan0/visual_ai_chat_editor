@@ -1,5 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
-import { createNodeId, deriveNodesAndEdges } from './Util';
+import {
+  createNodeId,
+  deriveNodesAndEdges,
+  getEdgeStyle,
+ } from './Util';
+
 import {
   addEdge,
   getIncomers,
@@ -38,6 +43,7 @@ const NodeOperations = () => {
   const [selectedUserNodeId, setSelectedUserNodeId] = useState(initialNode.id);
   const [selectedNodeId, setSelectedNodeId] = useState(initialNode.id);
   const [rootNodeId, setRootNodeId] = useState(initialNode.id);
+  const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
   const { screenToFlowPosition } = useReactFlow();
 
   const nodeMapRef = useRef(nodeMap);
@@ -342,6 +348,107 @@ const NodeOperations = () => {
     );
   }, [nodes, edges]);
 
+  const onNodeDrag = useCallback((event, node) => {
+    if (node.type === 'PlaceholderNode') return;
+
+    // Get node center position
+    const nodeX = node.position.x + node.measured.width / 2;
+    const nodeY = node.position.y + node.measured.height / 2;
+
+    // Check intersection with each edge
+    const intersectingEdge = edges.find(edge => 
+      edge.source !== node.id && 
+      edge.target !== node.id && 
+      isPointNearLine(nodeX, nodeY, edge)
+    );
+
+    if (intersectingEdge) {
+      // Add visual feedback
+      setHoveredEdgeId(intersectingEdge.id);
+    } else {
+      setHoveredEdgeId(null);
+    }
+  }, [edges, nodes]);
+
+
+  // check if point is on line segment
+  const isPointNearLine = (x, y, edge) => {
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    const targetNode = nodes.find(n => n.id === edge.target);
+    
+    if (!sourceNode || !targetNode) return false;
+
+    // Get center points of nodes for simple line calculation
+    const x1 = sourceNode.position.x + sourceNode.measured.width / 2;
+    const y1 = sourceNode.position.y + sourceNode.measured.height / 2;
+    const x2 = targetNode.position.x + targetNode.measured.width / 2;
+    const y2 = targetNode.position.y + targetNode.measured.height / 2;
+
+    // Calculate distance from point to line
+    const threshold = 20; // Detection radius in pixels
+    
+    const numerator = Math.abs((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1);
+    const denominator = Math.sqrt((y2 - y1) ** 2 + (x2 - x1) ** 2);
+    const distance = numerator / denominator;
+
+    console.log("isPointNearLine", distance < threshold);
+    return distance < threshold;
+  };
+
+  const onNodeDragStop = useCallback((event, node) => {
+    if (hoveredEdgeId) {
+      const edge = edges.find(e => e.id === hoveredEdgeId);
+      const incomer = getIncomers(node, nodes, edges)[0];
+      const outgoers = getOutgoers(node, nodes, edges);
+    
+      if (edge) {
+        const newEdges = [
+          {
+            id: `${edge.source}-${node.id}`,
+            source: edge.source,
+            target: node.id,
+          },
+          {
+            id: `${node.id}-${edge.target}`,
+            source: node.id,
+            target: edge.target,
+          },
+        ];
+
+        // connect node's parent and child
+        outgoers.forEach(outgoer => {          
+          newEdges.push(
+            {
+              id: `${incomer.id}-${outgoer.id}`,
+              source: incomer.id,
+              target: outgoer.id,
+            }
+          );
+        });
+
+
+        // Get all edges connected to this node
+        const connectedEdges = getConnectedEdges([node], edges);
+        
+        setEdges(prev_edges => 
+          prev_edges
+          .filter(e => 
+            !connectedEdges.some(connectedEdge => connectedEdge.id === e.id) && 
+            e.id !== edge.id
+          ) // Remove both connected edges and hover edge
+          .concat(newEdges)
+        );
+      }
+
+      setHoveredEdgeId(null);
+    }
+  }, [hoveredEdgeId, edges, setEdges]);
+
+  const styledEdges = edges.map(edge => ({
+    ...edge,
+    style: getEdgeStyle(edge, hoveredEdgeId)
+  }));
+  
   return {
     nodes,
     setNodes,
@@ -364,6 +471,10 @@ const NodeOperations = () => {
     setSelectedNodeId,
     rootNodeId,
     setRootNodeId,
+    onNodeDrag,
+    onNodeDragStop,
+    setHoveredEdgeId,
+    styledEdges,
   };
 };
 

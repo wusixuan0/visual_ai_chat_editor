@@ -50,3 +50,10 @@ export const deriveNodesAndEdges = (nodeMap) => {
   
   return { nodes, edges }
 };
+
+// Custom edge style when hovered
+export const getEdgeStyle = (edge, hoveredEdge) => ({
+  stroke: edge.id === hoveredEdge ? '#ff0072' : '#b1b1b7',
+  strokeWidth: edge.id === hoveredEdge ? 3 : 1,
+  transition: 'stroke 0.2s, stroke-width 0.2s'
+});
