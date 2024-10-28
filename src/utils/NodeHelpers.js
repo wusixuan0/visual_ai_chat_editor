@@ -201,9 +201,8 @@ const NodeOperations = () => {
     [],
   );
 
-
+  // TODO: memoize selection update logic
   const onNodeClick = useCallback((_, clickedNode) => {
-    setNodes((prevNodes) => {
       const clickedId = clickedNode.id
       const isSelected = clickedNode?.data?.selected;
 
@@ -222,8 +221,28 @@ const NodeOperations = () => {
 
         console.log(`unselected ${clickedNode.type}node id:`, clickedId);
       }
-  
-      return prevNodes.map((node) => ({
+
+      setNodeMap(prevMap => {
+        const node = prevMap[clickedId].node;
+        const updatedNode = {
+          ...node,
+          data: {
+            ...node.data,
+            selected:!node.data.selected
+          },
+        };
+        
+        return {
+          ...prevMap,
+          [clickedId]: {
+            ...prevMap[clickedId],
+            node: updatedNode,
+          },
+        };
+      });
+
+      setNodes((prevNodes) => {
+        return prevNodes.map((node) => ({
         ...node,
         data: {
           ...node.data,
@@ -231,7 +250,7 @@ const NodeOperations = () => {
         }
       }));
     });
-  }, [setNodes, setSelectedNodeId]);
+  }, [setNodes, setNodeMap, setSelectedNodeId, setSelectedUserNodeId]);
 
   // TODO: nodeMap
   const onNodesDelete = useCallback(
