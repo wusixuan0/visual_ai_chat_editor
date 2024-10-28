@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { createNodeId, deriveNodesAndEdges } from './Util';
 import {
   addEdge,
@@ -39,6 +39,9 @@ const NodeOperations = () => {
   const [selectedNodeId, setSelectedNodeId] = useState(initialNode.id);
   const [rootNodeId, setRootNodeId] = useState(initialNode.id);
   const { screenToFlowPosition } = useReactFlow();
+
+  const nodeMapRef = useRef(nodeMap);
+  nodeMapRef.current = nodeMap;
 
   const recalculateFlow = useCallback(() => {
     const { nodes, edges } = deriveNodesAndEdges(nodeMap);
@@ -86,8 +89,8 @@ const NodeOperations = () => {
     const { content, type, parentId, selected } = data;
 
     const newNodeId = createNodeId();
-
-    const parentNode = nodeMap[parentId];
+    const currentNodeMap = nodeMapRef.current;
+    const parentNode = currentNodeMap[parentId];
     const lastY = parentNode?.node?.position?.y ?? 0;
     const position = { x: 100, y: lastY + 100 };
 
@@ -102,13 +105,10 @@ const NodeOperations = () => {
       },
     };
 
-    console.log("Before updating nodeMap:", nodeMap);
-
     setNodeMap(prev => ({
       ...prev,
       [newNodeId]: newNodeMapEntry,
     }));
-    console.log("After updating nodeMap:", nodeMap);
 
     setNodes(prev => [...prev, newNodeMapEntry.node]);
     
