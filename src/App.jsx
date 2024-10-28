@@ -4,9 +4,6 @@ import {
   MiniMap,
   Controls,
   Background,
-  useEdgesState,
-  useNodesState,
-  useReactFlow,
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
@@ -15,7 +12,6 @@ import MessageNode from './components/MessageNode';
 import NodeOperations from './utils/NodeHelpers';
 import PlaceholderNode from './components/PlaceholderNode';
 import ResponseNode from './components/ResponseNode';
-import { createNodeId } from './utils/Util';
 
 const nodeTypes = {
   MessageNode: MessageNode,
@@ -24,42 +20,32 @@ const nodeTypes = {
 };
 
 export default function App() {
-  const initialNode = {
-    id: createNodeId(),
-    type: "PlaceholderNode",
-    position: { x: 100, y: 100 },
-    data: {
-      content: "Start a new conversation by typing below.",
-      hideUpperHandle: true,
-      selected: true,
-    },
-  };
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([initialNode]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const { screenToFlowPosition } = useReactFlow();
-  const [selectedNodeId, setSelectedNodeId] = useState(initialNode.id);
-  const [selectedUserNodeId, setSelectedUserNodeId] = useState(initialNode.id);
-  const [rootNodeId, setRootNodeId] = useState(initialNode.id);
   const [hoveredEdge, setHoveredEdge] = useState(null);
 
   // Pass the setState functions directly to the hook
   const {
+    nodes,
+    setNodes,
+    onNodesChange,
+    edges,
+    setEdges,
+    onEdgesChange,
     addNode,
     AddNodeOnEdgeDrop,
     updateNodeContent,
-    connectNodesWithEdge,
     onConnect,
     onNodeClick,
     onNodesDelete,
-  } = NodeOperations(
-    nodes,
-    edges,
-    setNodes,
-    setEdges,
-    screenToFlowPosition,
-    setSelectedNodeId,
+    nodeMap,
+    setNodeMap,
+    selectedUserNodeId,
     setSelectedUserNodeId,
+    selectedNodeId,
+    setSelectedNodeId,
+    rootNodeId,
+    setRootNodeId,
+  } = NodeOperations(
   );
 
   const recordCreatedNodeId = useCallback((nodeId) => {
@@ -97,7 +83,7 @@ export default function App() {
 
   const onNodeDrag = useCallback((event, node) => {
     if (node.type === 'PlaceholderNode') return;
-    debugger
+
     // Get node center position
     const nodeX = node.position.x + node.measured.width / 2;
     const nodeY = node.position.y + node.measured.height / 2;
@@ -121,7 +107,16 @@ export default function App() {
     if (hoveredEdge) {
       const edge = edges.find(e => e.id === hoveredEdge);
       if (edge) {
+        // TODO
         // restructuring the edges when a node is dropped on an edge
+
+        // remove 2 edge associate with this node
+        // connect node's parent and child
+        // remove the hover edge
+        // connect hover edge's source node - current node
+        // connect current node - hover edge's target node
+        
+        // Example: Split the edge and connect through the dropped node
         const newEdges = [
           {
             id: `${edge.source}-${node.id}`,
@@ -135,10 +130,14 @@ export default function App() {
             target: edge.target,
             type: edge.type,
           },
-          // TODO: connect node's parent and child
+          // { // TODO: connect node's parent and child, additional computation
+          //   id: `${node.id}-${edge.target}`,
+          //   source: node.id,
+          //   target: edge.target,
+          // },
         ];
 
-        // TODO: remove 2 edge of node
+        // TODO: remove 2 edge associate with this node, additional computation
         setEdges(eds => 
           eds
             .filter(e => e.id !== edge.id) // remove the original hover edge
@@ -191,7 +190,6 @@ export default function App() {
         setSelectedUserNodeId={setSelectedUserNodeId}
         addNode={addNode}
         updateNodeContent={updateNodeContent}
-        connectNodesWithEdge={connectNodesWithEdge}
       />
     </div>
   );

@@ -1,99 +1,179 @@
-import { useCallback } from 'react';
-import { createNodeId } from './Util';
+import { useState, useCallback } from 'react';
+import { createNodeId, deriveNodesAndEdges } from './Util';
 import {
   addEdge,
   getIncomers,
   getOutgoers,
   getConnectedEdges,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
 } from '@xyflow/react';
 
-const NodeOperations = (nodes, edges, setNodes, setEdges, screenToFlowPosition, setSelectedNodeId, setSelectedUserNodeId) => {
+const NodeOperations = () => {
+  const newNodeId = createNodeId();
+
+  const initialNode = {
+    id: newNodeId,
+    type: "PlaceholderNode",
+    position: { x: 100, y: 100 },
+    data: {
+      content: "Start a new conversation by typing below.",
+      hideUpperHandle: true,
+      selected: true,
+    },
+  };
+  
+  const initialNodeMap = {
+    [newNodeId]: {
+      id: newNodeId,
+      parentId: null,
+      node: initialNode,
+    }
+  };
+
+  const [nodes, setNodes, onNodesChange] = useNodesState([initialNode]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodeMap, setNodeMap] = useState(initialNodeMap);
+  const [selectedUserNodeId, setSelectedUserNodeId] = useState(initialNode.id);
+  const [selectedNodeId, setSelectedNodeId] = useState(initialNode.id);
+  const [rootNodeId, setRootNodeId] = useState(initialNode.id);
+  const { screenToFlowPosition } = useReactFlow();
+
+  const recalculateFlow = useCallback(() => {
+    const { nodes, edges } = deriveNodesAndEdges(nodeMap);
+    setNodes(nodes);
+    setEdges(edges);
+  }, [nodeMap]);
+
   // add a node with custom positioning
-  const addNodeWithPosition = useCallback((content, position, sourceNodeId = null) => {
+   const addNodeWithPosition = useCallback((content, position, parentNodeId = null) => {
     const newNodeId = createNodeId();
     
-    setNodes((nds) => {
-      const newNode = {
+    const newNodeMapEntry = {
+      id: newNodeId,
+      parentId: parentNodeId,
+      node: {
         id: newNodeId,
         type: 'PlaceholderNode',
         position,
-        data: { 
-          content,
-          // selected: true,
-        },
+        data: { content },
+      },
+    };
+
+    setNodeMap(prev => ({
+      ...prev,
+      [newNodeId]: newNodeMapEntry,
+    }));
+
+    setNodes(prev => [...prev, newNodeMapEntry.node]);
+    
+    if (parentNodeId) {
+      const newEdge = {
+        id: `${parentNodeId}-${newNodeId}`,
+        source: parentNodeId,
+        target: newNodeId,
       };
 
-      if (!nds || nds.length === 0) {
-        return [newNode];
-      }
-
-      return [...nds, newNode];
-    });
-
-    if (sourceNodeId) {
-      setEdges((eds) =>
-        eds.concat({
-          id: `${sourceNodeId}-${newNodeId}`,
-          source: sourceNodeId,
-          target: newNodeId,
-        })
-      );
+      setEdges(oldEdges => addEdge(newEdge, oldEdges));
     }
 
     return newNodeId;
-  }, [setNodes, setEdges]);
+  }, []);
 
   // for vertical stacking
-  const addNode = useCallback((content, nodeType, selected) => {
+  const addNode = useCallback((data) => {
+    const { content, type, parentId, selected } = data;
+
     const newNodeId = createNodeId();
 
-    setNodes((nds) => {
-      if (!nds || nds.length === 0) {
-        return [{
-          id: newNodeId,
-          type: nodeType,
-          position: { x: 100, y: 100 },
-          data: { 
-            content,
-            selected,
-          },
-        }];
-      }
+    const parentNode = nodeMap[parentId];
+    const lastY = parentNode?.node?.position?.y ?? 0;
+    const position = { x: 100, y: lastY + 100 };
 
-      try {
-        const parentNode = nds?.[nds.length - 1];
-        const lastY = parentNode?.position?.y ?? 0;
-        const position = { x: 100, y: lastY + 100 };
-        
-        return [
-          ...nds,
-          {
-            id: newNodeId,
-            type: nodeType,
-            position,
-            data: { 
-              content,
-              selected,
-            },  
-          },
-        ];
-      } catch (error) {
-        console.error('Error adding node:', error);
-        return [
-          ...nds,
-          {
-            id: createNodeId(),
-            type: nodeType,
-            position: { x: 100, y: nds.length * 100 },
-            data: { content },
-          },
-        ];
-      }
-    });
+    const newNodeMapEntry = {
+      id: newNodeId,
+      parentId: parentId,
+      node: {
+        id: newNodeId,
+        type,
+        position,
+        data: { content, selected },
+      },
+    };
+
+    console.log("Before updating nodeMap:", nodeMap);
+
+    setNodeMap(prev => ({
+      ...prev,
+      [newNodeId]: newNodeMapEntry,
+    }));
+    console.log("After updating nodeMap:", nodeMap);
+
+    setNodes(prev => [...prev, newNodeMapEntry.node]);
+    
+    if (parentId) {
+      const newEdge = {
+        id: `${parentId}-${newNodeId}`,
+        source: parentId,
+        target: newNodeId,
+      };
+
+      setEdges(oldEdges => addEdge(newEdge, oldEdges));
+    }
 
     return newNodeId;
-  }, [setNodes]);
+  }, []);
 
+  // const addNode = useCallback((content, nodeType, selected) => {
+  //   const newNodeId = createNodeId();
+
+  //   setNodes((nds) => {
+  //     if (!nds || nds.length === 0) {
+  //       return [{
+  //         id: newNodeId,
+  //         type: nodeType,
+  //         position: { x: 100, y: 100 },
+  //         data: { 
+  //           content,
+  //           selected,
+  //         },
+  //       }];
+  //     }
+
+  //     try {
+  //       const parentNode = nds?.[nds.length - 1];
+  //       const lastY = parentNode?.position?.y ?? 0;
+  //       const position = { x: 100, y: lastY + 100 };
+        
+  //       return [
+  //         ...nds,
+  //         {
+  //           id: newNodeId,
+  //           type: nodeType,
+  //           position,
+  //           data: { 
+  //             content,
+  //             selected,
+  //           },  
+  //         },
+  //       ];
+  //     } catch (error) {
+  //       console.error('Error adding node:', error);
+  //       return [
+  //         ...nds,
+  //         {
+  //           id: createNodeId(),
+  //           type: nodeType,
+  //           position: { x: 100, y: nds.length * 100 },
+  //           data: { content },
+  //         },
+  //       ];
+  //     }
+  //   });
+
+  //   return newNodeId;
+  // }, [setNodes]);
 
   const updateNodeContent = useCallback((nodeId, content, type, selected) => {
     setNodes((prevNodes) =>
@@ -227,15 +307,26 @@ const NodeOperations = (nodes, edges, setNodes, setEdges, screenToFlowPosition, 
   );
 
   return {
+    nodes,
+    setNodes,
+    onNodesChange,
+    edges,
+    setEdges,
+    onEdgesChange,
     addNode,
-    addNodeWithPosition,
-    updateNodeContent,
-    onConnectEnd,
     AddNodeOnEdgeDrop,
-    connectNodesWithEdge,
+    updateNodeContent,
     onConnect,
     onNodeClick,
     onNodesDelete,
+    nodeMap,
+    setNodeMap,
+    selectedUserNodeId,
+    setSelectedUserNodeId,
+    selectedNodeId,
+    setSelectedNodeId,
+    rootNodeId,
+    setRootNodeId,
   };
 };
 

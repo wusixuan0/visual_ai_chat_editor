@@ -31,3 +31,22 @@ export const extractHistory = (id_list, nodes) =>
       parts: [{ text: node.data.content }]
     };
   }).filter(Boolean);
+
+export const deriveNodesAndEdges = (nodeMap) => {
+  const nodes = [];
+  const edges = [];
+
+  Object.values(nodeMap).forEach(node => {
+    nodes.push(node.node);
+
+    if (node.parentId) {
+      edges.push({
+        id: `${node.parentId}-${node.id}`,
+        source: node.parentId,
+        target: node.id,
+      });
+    }
+  });
+  
+  return { nodes, edges }
+};

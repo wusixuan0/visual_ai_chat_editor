@@ -3,7 +3,7 @@ import { Box, Textarea, Button, VStack, HStack } from '@chakra-ui/react';
 import axios from 'axios';
 import { convertEdgeToParentMap, traverseToRoot, extractHistory } from '../utils/Util';
 
-const ChatInput = ({ nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUserNodeId, addNode, connectNodesWithEdge, updateNodeContent }) => {
+const ChatInput = ({ nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUserNodeId, addNode, updateNodeContent }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -15,10 +15,14 @@ const ChatInput = ({ nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUs
     setIsLoading(true);
 
     updateNodeContent(selectedUserNodeId, userInput, "MessageNode", false);
-    setSelectedUserNodeId(null);
 
-    const aiNodeId = addNode("Waiting for AI response...", "PlaceholderNode");
-    connectNodesWithEdge(selectedUserNodeId, aiNodeId);
+    const aiNodeId = addNode({
+      content: "Waiting for AI response...",
+      type: "PlaceholderNode",
+      parentId: selectedUserNodeId,
+    });
+
+    setSelectedUserNodeId(null);
 
     const parentMap = convertEdgeToParentMap(edges);
     const pathId = traverseToRoot(selectedUserNodeId, rootNodeId, parentMap);
@@ -41,10 +45,14 @@ const ChatInput = ({ nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUs
 
       updateNodeContent(aiNodeId, response.data?.response, "ResponseNode");
 
-      const newNodeId = addNode("Type to continue conversation…", "PlaceholderNode", true);
-      setSelectedUserNodeId(newNodeId);
+      const newNodeId = addNode({
+        content: "Type to continue conversation…",
+        type: "PlaceholderNode",
+        parentId: aiNodeId,
+        selected: true,
+      });
 
-      connectNodesWithEdge(aiNodeId, newNodeId);
+      setSelectedUserNodeId(newNodeId);
 
       console.log(response.data);
     } catch (error) {
