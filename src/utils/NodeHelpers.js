@@ -89,6 +89,7 @@ const NodeOperations = () => {
     const { content, type, parentId, selected } = data;
 
     const newNodeId = createNodeId();
+
     const currentNodeMap = nodeMapRef.current;
     const parentNode = currentNodeMap[parentId];
     const lastY = parentNode?.node?.position?.y ?? 0;
@@ -125,74 +126,34 @@ const NodeOperations = () => {
     return newNodeId;
   }, []);
 
-  // const addNode = useCallback((content, nodeType, selected) => {
-  //   const newNodeId = createNodeId();
-
-  //   setNodes((nds) => {
-  //     if (!nds || nds.length === 0) {
-  //       return [{
-  //         id: newNodeId,
-  //         type: nodeType,
-  //         position: { x: 100, y: 100 },
-  //         data: { 
-  //           content,
-  //           selected,
-  //         },
-  //       }];
-  //     }
-
-  //     try {
-  //       const parentNode = nds?.[nds.length - 1];
-  //       const lastY = parentNode?.position?.y ?? 0;
-  //       const position = { x: 100, y: lastY + 100 };
-        
-  //       return [
-  //         ...nds,
-  //         {
-  //           id: newNodeId,
-  //           type: nodeType,
-  //           position,
-  //           data: { 
-  //             content,
-  //             selected,
-  //           },  
-  //         },
-  //       ];
-  //     } catch (error) {
-  //       console.error('Error adding node:', error);
-  //       return [
-  //         ...nds,
-  //         {
-  //           id: createNodeId(),
-  //           type: nodeType,
-  //           position: { x: 100, y: nds.length * 100 },
-  //           data: { content },
-  //         },
-  //       ];
-  //     }
-  //   });
-
-  //   return newNodeId;
-  // }, [setNodes]);
-
   const updateNodeContent = useCallback((nodeId, content, type, selected) => {
-    setNodes((prevNodes) =>
-      prevNodes.map((node) => {
-        if (node.id === nodeId) {
-          return {
-            ...node,
-            type,
-            data: {
-              ...node.data,
-              content,
-              selected,
-            },
-          };
-        }
-        return node;
-      })
-    );
-  }, [setNodes]);
+    setNodeMap(prevMap => {
+      const updatedNode = {
+        ...prevMap[nodeId].node,
+        type,
+        data: {
+          ...prevMap[nodeId].node.data,
+          content,
+          selected,
+        },
+      };
+      
+      // Update nodes in the same batch
+      setNodes(prevNodes =>
+        prevNodes.map(node =>
+          node.id === nodeId ? updatedNode : node
+        )
+      );
+
+      return {
+        ...prevMap,
+        [nodeId]: {
+          ...prevMap[nodeId],
+          node: updatedNode,
+        },
+      };
+    });
+}, []);
 
   const onConnectEnd = useCallback((event, connectionState) => {
     if (!connectionState.isValid) {
@@ -235,13 +196,6 @@ const NodeOperations = () => {
     }, [screenToFlowPosition, addNodeWithPosition, onNodeCreated]);
   };
 
-  const connectNodesWithEdge = useCallback((sourceNodeId, targetNodeId) => {
-    const newEdgeId = `e${sourceNodeId}-${targetNodeId}`;
-    const newEdge = { id: newEdgeId, source: sourceNodeId, target: targetNodeId };
-
-    setEdges((eds) => addEdge(newEdge, eds));
-  }, [setEdges]);
-
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
     [],
@@ -279,6 +233,7 @@ const NodeOperations = () => {
     });
   }, [setNodes, setSelectedNodeId]);
 
+  // TODO: nodeMap
   const onNodesDelete = useCallback(
     (deleted) => {
       setEdges(
