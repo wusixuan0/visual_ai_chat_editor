@@ -53,26 +53,29 @@ export default function App() {
   );
 
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
-      <ReactFlow
-        nodes={nodes}
-        nodeTypes={nodeTypes}
-        edges={styledEdges}
-        onNodesChange={onNodesChange}
-        onNodeClick={onNodeClick}
-        onNodesDelete={onNodeDelete}
-        onNodeDrag={onNodeDrag}
-        onNodeDragStop={onNodeDragStop}
-        onEdgesChange={onEdgesChange}
-        onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
-        onEdgeMouseLeave={() => setHoveredEdgeId(null)}
-        onConnect={onConnect}
-        onConnectEnd={onConnectEnd}
-      >
-        <Controls />
-        <MiniMap />
-        <Background variant="dots" gap={12} size={1} />
-      </ReactFlow>
+    <>
+      <div style={{ width: '100vw', height: '80vh' }}>
+        <ReactFlow
+          nodes={nodes}
+          nodeTypes={nodeTypes}
+          edges={styledEdges}
+          onNodesChange={onNodesChange}
+          onNodeClick={onNodeClick}
+          onNodesDelete={onNodeDelete}
+          onNodeDrag={onNodeDrag}
+          onNodeDragStop={onNodeDragStop}
+          onEdgesChange={onEdgesChange}
+          onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
+          onEdgeMouseLeave={() => setHoveredEdgeId(null)}
+          onConnect={onConnect}
+          onConnectEnd={onConnectEnd}
+        >
+          <Controls />
+          <MiniMap />
+          <Background variant="dots" gap={12} size={1} />
+        </ReactFlow>
+      </div>
+
       <ChatInput
         nodes={nodes}
         edges={edges}
@@ -82,6 +85,6 @@ export default function App() {
         addNode={addNode}
         updateNodeContent={updateNodeContent}
       />
-    </div>
+    </>
   );
 }

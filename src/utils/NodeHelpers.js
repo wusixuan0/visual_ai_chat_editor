@@ -96,10 +96,14 @@ const NodeOperations = () => {
 
     const newNodeId = createNodeId();
 
+    let incrementY = 100
+
+    if (selected) incrementY = 1000;
+
     const currentNodeMap = nodeMapRef.current;
     const parentNode = currentNodeMap[parentId];
     const lastY = parentNode?.node?.position?.y ?? 0;
-    const position = { x: 100, y: lastY + 100 };
+    const position = { x: 100, y: lastY + incrementY };
 
     const newNodeMapEntry = {
       id: newNodeId,

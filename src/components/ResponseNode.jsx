@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Box, Text } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
+import Markdown from 'react-markdown'
 
 export default memo(({ data }) => {
   return (
@@ -11,13 +12,13 @@ export default memo(({ data }) => {
       shadow={data?.selected ? "0 0 0 3px rgba(167,199,231,0.3)" : "md"}
       transform={data?.selected ? "scale(1.02)" : "scale(1)"}
       borderRadius="md"
-      p={3}
+      p={[2, 4, 6]}
       transition="all 0.2s"
     >
       {!data.hideUpperHandle && (
         <Handle type="target" position={Position.Top} />
       )}
-      <Text>{data.content}</Text>
+      <Markdown>{data.content}</Markdown>
       <Handle type="source" position={Position.Bottom} />
     </Box>
   );
