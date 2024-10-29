@@ -37,7 +37,15 @@ const ChatInput = ({ nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUs
     console.log("chat path", currentHistory)
 
     try {
-      const response = await axios.post('http://localhost:3000/api/ai/generate', { history: currentHistory }, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/ai/generate';
+
+      if (API_BASE_URL) {
+          console.log("API URL found", API_BASE_URL)
+      } else {
+          console.log("API URL not found")
+      }
+      
+      const response = await axios.post(API_BASE_URL, { history: currentHistory }, {
         headers: {
           'Content-Type': 'application/json',
         },
