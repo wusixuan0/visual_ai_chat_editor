@@ -10,11 +10,12 @@ import {
   getIncomers,
   getOutgoers,
   getConnectedEdges,
-  useEdgesState,
   useNodesState,
+  useEdgesState,
   useReactFlow,
 } from '@xyflow/react';
 
+import Dagre from '@dagrejs/dagre';
 import { getResponse } from '../api/Api';
 
 const NodeOperations = () => {
@@ -46,7 +47,8 @@ const NodeOperations = () => {
   const [selectedNodeId, setSelectedNodeId] = useState(initialNode.id);
   const [rootNodeId, setRootNodeId] = useState(initialNode.id);
   const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
-  const { screenToFlowPosition, getNode } = useReactFlow();
+  const { screenToFlowPosition, getNode, fitView } = useReactFlow();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // const nodeMapRef = useRef(nodeMap);
   // nodeMapRef.current = nodeMap;
@@ -443,32 +445,23 @@ const NodeOperations = () => {
     style: getEdgeStyle(edge, hoveredEdgeId)
   }));
 
-  // const recordNodeDimensions = useCallback((nodeId, dimensions) => {
-  //   setNodeMap((prevMap) => ({
-  //     ...prevMap,
-  //     [nodeId]: {
-  //       ...prevMap[nodeId],
-  //       dimensions,
-  //     },
-  //   }));
-  // });
-
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
     [],
   );
 
   const handleUserInput = async (userInput) => {
+    // 1. Update user node
     updateNodeContent(selectedUserNodeId, userInput, "MessageNode", false);
 
+    // 2. Create AI node
     const aiNodeId = addNode({
       content: "Waiting for AI response...",
       type: "PlaceholderNode",
       parentId: selectedUserNodeId,
     });
-  
-    setSelectedUserNodeId(null);
-  
+    
+    // 3. Get AI response
     const parentMap = convertEdgeToParentMap(edges);
     const pathId = traverseToRoot(selectedUserNodeId, rootNodeId, parentMap);
     const currentHistory = extractHistory(pathId, nodes);
@@ -478,8 +471,11 @@ const NodeOperations = () => {
   
     try {
       const aiResponse = await getResponse(currentHistory);
+
+      // 4. Update AI node
       updateNodeContent(aiNodeId, aiResponse, "ResponseNode");
   
+      // 5. Create next user node
       const newNodeId = addNode({
         content: "Type to continue conversation…",
         type: "PlaceholderNode",
@@ -488,12 +484,52 @@ const NodeOperations = () => {
       });
   
       setSelectedUserNodeId(newNodeId);
-  
     } catch (error) {
       console.error('Error during handleUserInputFlow:', error);
       updateNodeContent(aiNodeId, "Error: Failed to get AI response");
     }
   }
+
+  const getLayoutedElements = (nodes, edges, options) => {
+    const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+    g.setGraph({ rankdir: options.direction });
+  
+    edges.forEach((edge) => g.setEdge(edge.source, edge.target));
+    nodes.forEach((node) =>
+      g.setNode(node.id, {
+        ...node,
+        width: node.measured?.width ?? 0,
+        height: node.measured?.height ?? 0,
+      }),
+    );
+  
+    Dagre.layout(g);
+  
+    return {
+      nodes: nodes.map((node) => {
+        const position = g.node(node.id);
+        const x = position.x - (node.measured?.width ?? 0) / 2;
+        const y = position.y - (node.measured?.height ?? 0) / 2;
+  
+        return { ...node, position: { x, y } };
+      }),
+      edges,
+    };
+  };
+
+  const onLayout = useCallback(
+    (direction='TB') => {
+      const layouted = getLayoutedElements(nodes, edges, { direction });
+
+      setNodes([...layouted.nodes]);
+      setEdges([...layouted.edges]);
+
+      window.requestAnimationFrame(() => {
+        fitView();
+      });
+    },
+    [nodes, edges],
+  );  
 
   return {
     nodes,
@@ -514,6 +550,8 @@ const NodeOperations = () => {
     styledEdges,
     onConnectEnd,
     handleUserInput,
+    onLayout,
+    fitView,
   };
 };
 
