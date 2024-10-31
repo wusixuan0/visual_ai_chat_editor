@@ -12,7 +12,6 @@ import MessageNode from './components/MessageNode';
 import NodeOperations from './utils/NodeHelpers';
 import PlaceholderNode from './components/PlaceholderNode';
 import ResponseNode from './components/ResponseNode';
-import { handleUserInputFlow } from './utils/NodeManager';
 
 const nodeTypes = {
   MessageNode: MessageNode,
@@ -24,21 +23,16 @@ export default function App() {
   const {
     nodes,
     onNodesChange,
-    edges,
     onEdgesChange,
-    addNode,
-    updateNodeContent,
     onConnect,
     onNodeClick,
     onNodeDelete,
-    selectedUserNodeId,
-    setSelectedUserNodeId,
-    rootNodeId,
     onNodeDrag,
     onNodeDragStop,
     setHoveredEdgeId,
     styledEdges,
     onConnectEnd,
+    handleUserInput,
   } = NodeOperations();
 
   return (
@@ -65,16 +59,7 @@ export default function App() {
         </ReactFlow>
       </div>
 
-      <ChatInput
-        nodes={nodes}
-        edges={edges}
-        rootNodeId={rootNodeId}
-        selectedUserNodeId={selectedUserNodeId}
-        setSelectedUserNodeId={setSelectedUserNodeId}
-        addNode={addNode}
-        updateNodeContent={updateNodeContent}
-        handleUserInputFlow={handleUserInputFlow}
-      />
+      <ChatInput handleUserInput={handleUserInput} />
     </>
   );
 }

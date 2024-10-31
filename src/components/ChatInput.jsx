@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Textarea, Button, VStack, HStack } from '@chakra-ui/react';
 
-const ChatInput = ({ handleUserInputFlow, nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUserNodeId, addNode, updateNodeContent }) => {
+const ChatInput = ({ handleUserInput, selectedUserNodeId }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -12,16 +12,7 @@ const ChatInput = ({ handleUserInputFlow, nodes, edges, rootNodeId, selectedUser
 
     setIsLoading(true);
 
-    await handleUserInputFlow({
-      userInput,
-      nodes,
-      edges,
-      rootNodeId,
-      selectedUserNodeId,
-      setSelectedUserNodeId,
-      addNode,
-      updateNodeContent,
-    });
+    await handleUserInput(userInput);
 
     setIsLoading(false);
     setUserInput('');

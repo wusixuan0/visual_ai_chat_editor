@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import {
   createNodeId,
   getEdgeStyle,
+  convertEdgeToParentMap, traverseToRoot, extractHistory
  } from './Util';
 
 import {
@@ -13,6 +14,8 @@ import {
   useNodesState,
   useReactFlow,
 } from '@xyflow/react';
+
+import { getResponse } from '../api/Api';
 
 const NodeOperations = () => {
   const newNodeId = createNodeId();
@@ -455,6 +458,43 @@ const NodeOperations = () => {
     [],
   );
 
+  const handleUserInput = async (userInput) => {
+    updateNodeContent(selectedUserNodeId, userInput, "MessageNode", false);
+
+    const aiNodeId = addNode({
+      content: "Waiting for AI response...",
+      type: "PlaceholderNode",
+      parentId: selectedUserNodeId,
+    });
+  
+    setSelectedUserNodeId(null);
+  
+    const parentMap = convertEdgeToParentMap(edges);
+    const pathId = traverseToRoot(selectedUserNodeId, rootNodeId, parentMap);
+    const currentHistory = extractHistory(pathId, nodes);
+    currentHistory.pop();
+  
+    currentHistory.push({ role: "user", parts: [{ text: userInput }] });
+  
+    try {
+      const aiResponse = await getResponse(currentHistory);
+      updateNodeContent(aiNodeId, aiResponse, "ResponseNode");
+  
+      const newNodeId = addNode({
+        content: "Type to continue conversation…",
+        type: "PlaceholderNode",
+        parentId: aiNodeId,
+        selected: true,
+      });
+  
+      setSelectedUserNodeId(newNodeId);
+  
+    } catch (error) {
+      console.error('Error during handleUserInputFlow:', error);
+      updateNodeContent(aiNodeId, "Error: Failed to get AI response");
+    }
+  }
+
   return {
     nodes,
     onNodesChange,
@@ -473,6 +513,7 @@ const NodeOperations = () => {
     setHoveredEdgeId,
     styledEdges,
     onConnectEnd,
+    handleUserInput,
   };
 };
 

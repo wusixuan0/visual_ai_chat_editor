@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import axios from 'axios';
 
 export const getResponse = async (currentHistory) => {
