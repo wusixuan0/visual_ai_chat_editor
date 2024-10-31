@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -26,31 +26,19 @@ export default function App() {
     edges,
     onEdgesChange,
     addNode,
-    AddNodeOnEdgeDrop,
     updateNodeContent,
     onConnect,
     onNodeClick,
     onNodeDelete,
     selectedUserNodeId,
     setSelectedUserNodeId,
-    selectedNodeId,
-    setSelectedNodeId,
     rootNodeId,
-    setRootNodeId,
     onNodeDrag,
     onNodeDragStop,
     setHoveredEdgeId,
     styledEdges,
+    onConnectEnd,
   } = NodeOperations();
-
-  const recordCreatedNodeId = useCallback((nodeId) => {
-    // setSelectedNodeId(nodeId);
-    console.log("AddNodeOnEdgeDrop id", nodeId)
-  }, []);
-
-  const onConnectEnd = AddNodeOnEdgeDrop(
-    recordCreatedNodeId,
-  );
 
   return (
     <>

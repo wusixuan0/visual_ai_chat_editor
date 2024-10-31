@@ -1,7 +1,6 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import {
   createNodeId,
-  deriveNodesAndEdges,
   getEdgeStyle,
  } from './Util';
 
@@ -44,16 +43,16 @@ const NodeOperations = () => {
   const [selectedNodeId, setSelectedNodeId] = useState(initialNode.id);
   const [rootNodeId, setRootNodeId] = useState(initialNode.id);
   const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getNode } = useReactFlow();
 
-  const nodeMapRef = useRef(nodeMap);
-  nodeMapRef.current = nodeMap;
+  // const nodeMapRef = useRef(nodeMap);
+  // nodeMapRef.current = nodeMap;
 
-  const recalculateFlow = useCallback(() => {
-    const { nodes, edges } = deriveNodesAndEdges(nodeMap);
-    setNodes(nodes);
-    setEdges(edges);
-  }, [nodeMap]);
+  // const recalculateFlow = useCallback(() => {
+  //   const { nodes, edges } = deriveNodesAndEdges(nodeMap);
+  //   setNodes(nodes);
+  //   setEdges(edges);
+  // }, [nodeMap]);
 
   // add a node with custom positioning
    const addNodeWithPosition = useCallback((content, position, parentNodeId = null) => {
@@ -96,14 +95,17 @@ const NodeOperations = () => {
 
     const newNodeId = createNodeId();
 
-    let incrementY = 100
+    let spacing = 100
 
-    if (selected) incrementY = 1000;
+    if (selected) spacing = 1000;
 
-    const currentNodeMap = nodeMapRef.current;
-    const parentNode = currentNodeMap[parentId];
-    const lastY = parentNode?.node?.position?.y ?? 0;
-    const position = { x: 100, y: lastY + incrementY };
+    // const parentNode = nodeMapRef.current[parentId];
+    const parentNode = getNode(parentId);
+    const { height = 50, width = 200 } = parentNode?.measured || {}
+
+    const lastY = parentNode?.position?.y ?? 0;
+    const position = { x: 100, y: lastY + height + spacing };
+    console.log(newNodeId, position);
 
     const newNodeMapEntry = {
       id: newNodeId,
@@ -112,7 +114,7 @@ const NodeOperations = () => {
         id: newNodeId,
         type,
         position,
-        data: { content, selected },
+        data: { id: newNodeId, content, selected },
       },
     };
 
@@ -163,25 +165,7 @@ const NodeOperations = () => {
         },
       };
     });
-}, []);
-
-  const onConnectEnd = useCallback((event, connectionState) => {
-    if (!connectionState.isValid) {
-      const { clientX, clientY } =
-        'changedTouches' in event ? event.changedTouches[0] : event;
-      
-      const position = screenToFlowPosition({
-        x: clientX,
-        y: clientY,
-      });
-
-      addNodeWithPosition(
-        "Type to continue conversation…",
-        position,
-        connectionState.fromNode.id
-      );
-    }
-  }, [screenToFlowPosition, addNodeWithPosition]);
+  }, []);
 
   const AddNodeOnEdgeDrop = (onNodeCreated) => {
     return useCallback((event, connectionState) => {
@@ -206,9 +190,13 @@ const NodeOperations = () => {
     }, [screenToFlowPosition, addNodeWithPosition, onNodeCreated]);
   };
 
-  const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
-    [],
+  const recordCreatedNodeId = useCallback((nodeId) => {
+    setSelectedNodeId(nodeId);
+    console.log("AddNodeOnEdgeDrop id", nodeId)
+  }, []);
+
+  const onConnectEnd = AddNodeOnEdgeDrop(
+    recordCreatedNodeId,
   );
 
   // TODO: memoize selection update logic
@@ -430,7 +418,6 @@ const NodeOperations = () => {
           );
         });
 
-
         // Get all edges connected to this node
         const connectedEdges = getConnectedEdges([node], edges);
         
@@ -452,33 +439,40 @@ const NodeOperations = () => {
     ...edge,
     style: getEdgeStyle(edge, hoveredEdgeId)
   }));
-  
+
+  // const recordNodeDimensions = useCallback((nodeId, dimensions) => {
+  //   setNodeMap((prevMap) => ({
+  //     ...prevMap,
+  //     [nodeId]: {
+  //       ...prevMap[nodeId],
+  //       dimensions,
+  //     },
+  //   }));
+  // });
+
+  const onConnect = useCallback(
+    (params) => setEdges((eds) => addEdge(params, eds)),
+    [],
+  );
+
   return {
     nodes,
-    setNodes,
     onNodesChange,
     edges,
-    setEdges,
     onEdgesChange,
     addNode,
-    AddNodeOnEdgeDrop,
     updateNodeContent,
     onConnect,
     onNodeClick,
-    onNodesDelete,
     onNodeDelete,
-    nodeMap,
-    setNodeMap,
     selectedUserNodeId,
     setSelectedUserNodeId,
-    selectedNodeId,
-    setSelectedNodeId,
     rootNodeId,
-    setRootNodeId,
     onNodeDrag,
     onNodeDragStop,
     setHoveredEdgeId,
     styledEdges,
+    onConnectEnd,
   };
 };
 

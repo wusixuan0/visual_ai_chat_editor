@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Textarea, Button, VStack, HStack } from '@chakra-ui/react';
-import axios from 'axios';
 import { convertEdgeToParentMap, traverseToRoot, extractHistory } from '../utils/Util';
+import { getResponse } from '../api/Api';
 
 const ChatInput = ({ nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUserNodeId, addNode, updateNodeContent }) => {
   const [userInput, setUserInput] = useState('');
@@ -34,24 +34,10 @@ const ChatInput = ({ nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUs
       parts: [{ text: userInput }]
     });
 
-    console.log("chat path", currentHistory)
-
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/ai/generate';
+      const aiResponse = await getResponse(currentHistory);
 
-      if (API_BASE_URL) {
-          console.log("API URL found", API_BASE_URL)
-      } else {
-          console.log("API URL not found")
-      }
-      
-      const response = await axios.post(API_BASE_URL, { history: currentHistory }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      updateNodeContent(aiNodeId, response.data?.response, "ResponseNode");
+      updateNodeContent(aiNodeId, aiResponse, "ResponseNode");
 
       const newNodeId = addNode({
         content: "Type to continue conversation…",
@@ -61,8 +47,6 @@ const ChatInput = ({ nodes, edges, rootNodeId, selectedUserNodeId, setSelectedUs
       });
 
       setSelectedUserNodeId(newNodeId);
-
-      console.log(response.data);
     } catch (error) {
       console.error('There was an error!', error);
       updateNodeContent(aiNodeId, "Error: Failed to get AI response");
