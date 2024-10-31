@@ -12,6 +12,7 @@ import MessageNode from './components/MessageNode';
 import NodeOperations from './utils/NodeHelpers';
 import PlaceholderNode from './components/PlaceholderNode';
 import ResponseNode from './components/ResponseNode';
+import { handleUserInputFlow } from './utils/NodeManager';
 
 const nodeTypes = {
   MessageNode: MessageNode,
@@ -72,6 +73,7 @@ export default function App() {
         setSelectedUserNodeId={setSelectedUserNodeId}
         addNode={addNode}
         updateNodeContent={updateNodeContent}
+        handleUserInputFlow={handleUserInputFlow}
       />
     </>
   );
