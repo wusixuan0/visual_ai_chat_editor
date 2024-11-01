@@ -21,10 +21,12 @@ import { getResponse } from '../api/Api';
 const NodeOperations = () => {
   const newNodeId = createNodeId();
 
+  const xPos = window.innerWidth/2-200;
+
   const initialNode = {
     id: newNodeId,
     type: "PlaceholderNode",
-    position: { x: 100, y: 100 },
+    position: { x: xPos, y: 100 },
     data: {
       content: "Start a new conversation by typing below.",
       hideUpperHandle: true,
@@ -102,15 +104,14 @@ const NodeOperations = () => {
 
     const newNodeId = createNodeId();
 
-    let spacing = 100
-    if (selected & window.innerWidth > 600) spacing = 400;
-    if (selected & window.innerWidth <= 600) spacing = 500;
+    let spacing = 100;
+    if (selected) spacing = 500;
     const lastY = nodeMapRef.current[parentId]?.node?.position.y;
-    console.log(window.innerWidth)
+    const xPos = window.innerWidth/2-200;
     // const { height = 50, width = 200 } = parentNode?.measured || {}
     // const parentNode = getNode(parentId);
     // const lastY = parentNode?.position?.y ?? 0;
-    const position = { x: 100, y: lastY + spacing };
+    const position = { x: xPos, y: lastY + spacing };
 
     const newNodeMapEntry = {
       id: newNodeId,
