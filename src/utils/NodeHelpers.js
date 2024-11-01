@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   createNodeId,
   getEdgeStyle,
@@ -49,9 +49,11 @@ const NodeOperations = () => {
   const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
   const { screenToFlowPosition, getNode, fitView } = useReactFlow();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [nodeContent, setNodeContent] = useState('');
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-  // const nodeMapRef = useRef(nodeMap);
-  // nodeMapRef.current = nodeMap;
+  const nodeMapRef = useRef(nodeMap);
+  nodeMapRef.current = nodeMap;
 
   // const recalculateFlow = useCallback(() => {
   //   const { nodes, edges } = deriveNodesAndEdges(nodeMap);
@@ -101,16 +103,14 @@ const NodeOperations = () => {
     const newNodeId = createNodeId();
 
     let spacing = 100
-
-    if (selected) spacing = 1000;
-
-    // const parentNode = nodeMapRef.current[parentId];
-    const parentNode = getNode(parentId);
-    const { height = 50, width = 200 } = parentNode?.measured || {}
-
-    const lastY = parentNode?.position?.y ?? 0;
-    const position = { x: 100, y: lastY + height + spacing };
-    console.log(newNodeId, position);
+    if (selected & window.innerWidth > 600) spacing = 400;
+    if (selected & window.innerWidth <= 600) spacing = 500;
+    const lastY = nodeMapRef.current[parentId]?.node?.position.y;
+    console.log(window.innerWidth)
+    // const { height = 50, width = 200 } = parentNode?.measured || {}
+    // const parentNode = getNode(parentId);
+    // const lastY = parentNode?.position?.y ?? 0;
+    const position = { x: 100, y: lastY + spacing };
 
     const newNodeMapEntry = {
       id: newNodeId,
@@ -216,6 +216,11 @@ const NodeOperations = () => {
           setSelectedUserNodeId(clickedId);
         } else {
           setSelectedUserNodeId(null);
+
+          if (clickedNode.type !== "PlaceholderNode") {
+            setNodeContent(clickedNode?.data?.content);
+            setIsPanelOpen(true);
+          }
         }
         console.log(`selected ${clickedNode.type} node id:`, clickedId);
       } else {
@@ -551,7 +556,10 @@ const NodeOperations = () => {
     onConnectEnd,
     handleUserInput,
     onLayout,
-    fitView,
+    nodeContent,
+    selectedNodeId,
+    isPanelOpen,
+    setIsPanelOpen,
   };
 };
 

@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { Box } from '@chakra-ui/react';
+import { Box, Text } from '@chakra-ui/react';
 import Markdown from 'react-markdown'
 
 export default memo(({ data }) => {
@@ -18,7 +18,8 @@ export default memo(({ data }) => {
       {!data.hideUpperHandle && (
         <Handle type="target" position={Position.Top} />
       )}
-      <Markdown>{data.content}</Markdown>
+      <Markdown>{data.content.substring(0, 800)}</Markdown>
+      <Text color="grey">... (click to see complete text in side panel)</Text>
       <Handle type="source" position={Position.Bottom} />
     </Box>
   );

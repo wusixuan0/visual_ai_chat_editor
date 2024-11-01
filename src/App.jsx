@@ -14,6 +14,7 @@ import MessageNode from './components/MessageNode';
 import NodeOperations from './utils/NodeHelpers';
 import PlaceholderNode from './components/PlaceholderNode';
 import ResponseNode from './components/ResponseNode';
+import { SidePanel } from './components/SidePanel'
 import { Button } from "@chakra-ui/react"
 
 const nodeTypes = {
@@ -38,7 +39,9 @@ export default function App() {
     onLayout,
     selectedUserNodeId,
     handleUserInput,
-    fitView
+    nodeContent,
+    isPanelOpen,
+    setIsPanelOpen,
   } = NodeOperations();
 
   return (
@@ -59,7 +62,6 @@ export default function App() {
             onEdgeMouseLeave={() => setHoveredEdgeId(null)}
             onConnect={onConnect}
             onConnectEnd={onConnectEnd}
-            fitView
           >
             <Controls />
             <MiniMap />
@@ -68,6 +70,11 @@ export default function App() {
           <Panel position="top-right">
             <Button variant="solid" onClick={() => onLayout('TB')}>Click here to organize layout</Button>
           </Panel>
+          <SidePanel
+            isOpen={isPanelOpen}
+            onClose={() => setIsPanelOpen(false)}
+            nodeContent={nodeContent}
+          />
         </ReactFlowProvider>
       </div>
       <ChatInput 
